@@ -65,13 +65,13 @@ describe mean
 
 ## Authors
 
-Abdenassir El Amin - Initial work and design - [@your_github_handle]
+Abdenassir El Amin - Initial work and design - [@Nassir23]
 
 ## Version History
 
 * 0.1
     * Initial Release
-    * Basic mean calculation for 2048 samples
+    * Basic mean calculation for 2048 samples(adjustable)
     * Q1.15 fixed-point arithmetic implementation
     * Comprehensive testbench with multiple test cases
 
