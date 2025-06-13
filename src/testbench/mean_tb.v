@@ -26,18 +26,22 @@ module mean_tb;
     // Signale für den DUT (Device Under Test)
     reg clk = 0;                // Taktsignal (100 MHz)
     reg rst;                    // Reset (aktiv-high)
-    reg valid_in;               // Signal: Eingangsdaten gültig
     reg [15:0] data_in;        // Eingangsdaten (Q1.15)
-    wire valid_out;            // Ausgangs-Flag: Ergebnis gültig
+  	reg  s_axis_data_tvalid;
+  	wire s_axis_data_tready;
+    reg  m_axis_data_tready;   // Ausgangs-Flag: Ergebnis gültig
+    wire m_axis_data_tvalid;
     wire [15:0] sum_out;       // Ergebnis (Q1.15)
 
     // Instanziierung des zu testenden Moduls (DUT)
     mean dut (
         .clk(clk),
         .rst(rst),
-        .valid_in(valid_in),
+        .s_axis_data_tvalid(s_axis_data_tvalid),
+        .s_axis_data_tready(s_axis_data_tready),
         .data_in(data_in),
-        .valid_out(valid_out),
+        .m_axis_data_tvalid(m_axis_data_tvalid),
+        .m_axis_data_tready(m_axis_data_tready),
         .sum_out(sum_out)
     );
 
@@ -60,25 +64,27 @@ module mean_tb;
             // Reset-Sequenz
             rst = 1;
             rst = 0;
-            valid_in = 0;
+            s_axis_data_tvalid = 0;
             data_in = 0;
             ref_sum = 0;
             #10;
             rst = 1;
-            #10;
+            
 
             // 2048 mal denselben Wert einspeisen
             for (i = 0; i < 2048; i = i + 1) begin
-                valid_in = 1;
+                s_axis_data_tvalid = 1;
                 data_in = value;
                 ref_sum = ref_sum + $signed(value);  // Referenzwert mitführen
                 #10;
             end
             #10;
-            valid_in = 0;
-
+          
+			m_axis_data_tready =1;
             // Warten auf gültige Ausgabe vom DUT
-            wait (valid_out);
+          wait (s_axis_data_tready);
+			m_axis_data_tready =  0;
+                s_axis_data_tvalid = 0;
 
             // Vergleich & Ausgabe
             $display("Expected sum     : %f", $signed(ref_sum[27:11])/ 32768.0);

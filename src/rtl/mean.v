@@ -25,9 +25,11 @@
 module mean (
     input  wire        clk,         // Takt-Eingang
     input  wire        rst,         // Asynchrones Reset (aktiv-low)
-    input  wire        valid_in,    // Eingangsdaten gültig
+    input  wire        s_axis_data_tvalid,    // Eingangsdaten gültig
+    output reg        s_axis_data_tready,
     input  wire [15:0] data_in,     // Eingangsdaten im Q1.15-Format (Zweierkomplement)
-    output reg         valid_out,   // Ausgangssignal: zeigt an, dass sum_out gültig ist
+    output reg m_axis_data_tvalid,
+    input wire m_axis_data_tready,
     output reg [15:0]  sum_out      // Mittelwert-Ausgabe (Q1.15), Zweierkomplement
 );
 
@@ -43,11 +45,12 @@ module mean (
             count       <= 0;
             accumulator <= 0;
             sum_out     <= 0;
-            valid_out   <= 0;
+            s_axis_data_tready <= 0;
+            m_axis_data_tvalid <= 0;
         end else begin
-            valid_out <= 1;
-
-            if (valid_in) begin
+            
+            s_axis_data_tready <= 1;
+            if (s_axis_data_tvalid) begin
                 // Manuelle Sign-Erweiterung von 16 Bit auf 28 Bit
                 if (data_in[15]) begin
                     extended_in = {12'b111111111111, data_in}; // negativ: obere Bits mit 1
@@ -56,10 +59,17 @@ module mean (
                 end
 
                 if (count == N) begin
+                    if(m_axis_data_tready) begin
                     accumulator <= 0;
-                    count       <= 0;
+                    count <= 0;
+                    m_axis_data_tvalid <= 0;
+                    s_axis_data_tready <= 1;
+                    end
+                    else begin
                     sum_out     <= accumulator[27:11]; // Mittelwert = Summe / 2048
-                    valid_out   <= 1;
+                    m_axis_data_tvalid  <= 1;
+                    s_axis_data_tready  <= 0;
+                    end
                 end else begin
                     accumulator <= accumulator + extended_in;
                     count       <= count + 1;
